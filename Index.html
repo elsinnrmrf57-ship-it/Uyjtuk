@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista Pública Bolivia</title>
+    <style>
+        /* --- ESTILOS GENERALES (MODO OSCURO) --- */
+        body { background-color: #121212; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; margin: 0; }
+        .container { max-width: 1500px; margin: 0 auto; }
+        
+        h1 { color: #ff4444; text-align: center; text-transform: uppercase; margin-bottom: 5px; letter-spacing: 2px; }
+        p.subtitle { text-align: center; color: #888; margin-bottom: 25px; font-size: 14px; }
+
+        /* --- BUSCADOR --- */
+        .search-container { text-align: center; margin-bottom: 20px; }
+        .search-box { 
+            width: 100%; max-width: 500px; padding: 12px 20px; font-size: 16px; 
+            border-radius: 25px; border: 1px solid #444; background: #222; color: white; outline: none;
+        }
+        .search-box:focus { border-color: #ff4444; background: #333; }
+
+        /* --- TABLA --- */
+        .table-responsive { overflow-x: auto; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        table { width: 100%; border-collapse: collapse; background: #1e1e1e; min-width: 1200px; }
+        
+        thead { background: #b71c1c; color: white; }
+        th { padding: 15px 10px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+        td { padding: 12px 10px; border-bottom: 1px solid #333; font-size: 13px; vertical-align: top; color: #ddd; }
+        
+        /* Filas Zebra */
+        tr:nth-child(even) { background-color: #252525; }
+        tr:hover { background-color: #333; transition: 0.2s; }
+
+        /* --- COLUMNAS (Ajustadas a tu pedido) --- */
+        .col-nro { width: 40px; text-align: center; font-weight: bold; color: #ff4444; }
+        .col-nombre { font-weight: bold; color: #fff; width: 20%; font-size: 14px; }
+        
+        /* Columna DATOS: Agrupa todo el perfil */
+        .col-datos { width: 18%; color: #aaa; font-size: 12px; line-height: 1.7; }
+        
+        /* Columna HISTORIA */
+        .col-historia { width: 35%; line-height: 1.5; color: #ccc; white-space: pre-wrap; background-color: #1a1a1a; } 
+        
+        /* Columnas EXTRAS */
+        .col-its { width: 10%; font-size: 12px; }
+        .col-redes { width: 12%; font-size: 12px; word-break: break-all; color: #4fa3ff; }
+        .col-pruebas { width: 5%; text-align: center; }
+
+        /* --- ETIQUETAS --- */
+        .tag { display: inline-block; padding: 2px 6px; border-radius: 3px; background: #333; color: #fff; font-size: 11px; margin-right: 4px; margin-bottom: 2px; }
+        .tag-depto { background: #0d47a1; } 
+        .tag-its { background: #d32f2f; color: white; font-weight: bold; }
+        .tag-ok { background: #2e7d32; }
+        
+        .label-donde { color: #ffa726; display: block; margin-top: 4px; border-top: 1px solid #333; padding-top: 4px; font-style: italic; }
+
+        /* --- BOTÓN PRUEBAS --- */
+        .btn-link { 
+            display: inline-block; padding: 5px 10px; background: #222; color: #4fa3ff; 
+            text-decoration: none; border: 1px solid #4fa3ff; border-radius: 4px; font-size: 11px; font-weight: bold;
+        }
+        .btn-link:hover { background: #4fa3ff; color: #000; }
+
+        /* --- PAGINACIÓN --- */
+        .pagination { display: flex; justify-content: center; gap: 5px; margin-top: 25px; align-items: center; flex-wrap: wrap; }
+        .page-btn { 
+            background: #333; color: white; border: 1px solid #444; padding: 8px 12px; 
+            border-radius: 4px; cursor: pointer; font-size: 14px; min-width: 40px;
+        }
+        .page-btn:hover { background: #555; border-color: #666; }
+        .page-btn.active { background: #ff4444; border-color: #ff4444; font-weight: bold; }
+        .page-btn:disabled { background: #222; color: #555; border-color: #333; cursor: not-allowed; }
+        .nav-btn { font-weight: bold; background: #b71c1c; border: none; }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Base de Datos - Bolivia</h1>
+    <p class="subtitle">Consulta Pública v4.2</p>
+
+    <div class="search-container">
+        <input type="text" id="searchInput" class="search-box" placeholder="🔍 Buscar por Nombre, Apodo o Ciudad...">
+    </div>
+
+    <div id="loading" style="text-align: center; margin: 40px; color: #ff4444;">Cargando base de datos...</div>
+
+    <div class="table-responsive">
+        <table id="dataTable">
+            <thead>
+                <tr>
+                    <th style="text-align:center;">#</th>
+                    <th>Nombre Completo</th>
+                    <th>Datos</th>
+                    <th>Historia</th>
+                    <th>ITS-ETS</th>
+                    <th>Redes</th>
+                    <th style="text-align: center;">Pruebas</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+    <div class="pagination" id="paginationContainer" style="display:none;"></div>
+</div>
+
+<script>
+    // ==========================================
+    // ¡PEGA TU ENLACE CSV AQUÍ!
+    // ==========================================
+    const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQuyZr5BY-sQrkjkd55DObWEQ4Jq-IN5orJciSlCHGKKvkPSMwMWhUuBAZn7fWpKUQKlMS4HybiFfz2/pub?gid=0&single=true&output=csv';
+
+    let allData = [];
+    let filteredData = [];
+    let currentPage = 1;
+    const itemsPerPage = 50;
+
+    async function loadData() {
+        try {
+            const response = await fetch(sheetUrl + '&v=' + Date.now());
+            const text = await response.text();
+            
+            // Parser CSV mejorado
+            allData = parseCSVProper(text);
+            
+            // Ordenar alfabéticamente por nombre
+            allData.sort((a, b) => a.nombre.toLowerCase().localeCompare(b.nombre.toLowerCase()));
+
+            filteredData = allData;
+            
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('paginationContainer').style.display = 'flex';
+            renderTable();
+            renderPagination();
+        } catch (error) {
+            console.error(error);
+            document.getElementById('loading').innerHTML = 'Error al cargar. Verifica el enlace CSV.';
+        }
+    }
+
+    // Parser CSV mejorado que maneja correctamente comillas y celdas vacías
+    function parseCSVProper(text) {
+        const rows = [];
+        let currentRow = [];
+        let currentCell = '';
+        let insideQuotes = false;
+        
+        for (let i = 0; i < text.length; i++) {
+            const char = text[i];
+            const nextChar = text[i + 1];
+            
+            if (char === '"') {
+                if (insideQuotes && nextChar === '"') {
+                    // Comilla escapada ""
+                    currentCell += '"';
+                    i++; // Saltar la siguiente comilla
+                } else {
+                    // Toggle estado de comillas
+                    insideQuotes = !insideQuotes;
+                }
+            } else if (char === ',' && !insideQuotes) {
+                // Fin de celda
+                currentRow.push(currentCell.trim());
+                currentCell = '';
+            } else if ((char === '\n' || char === '\r') && !insideQuotes) {
+                // Fin de fila
+                if (char === '\r' && nextChar === '\n') {
+                    i++; // Saltar \n después de \r
+                }
+                if (currentCell || currentRow.length > 0) {
+                    currentRow.push(currentCell.trim());
+                    if (currentRow.some(cell => cell !== '')) {
+                        rows.push(currentRow);
+                    }
+                    currentRow = [];
+                    currentCell = '';
+                }
+            } else {
+                currentCell += char;
+            }
+        }
+        
+        // Agregar última celda/fila si existe
+        if (currentCell || currentRow.length > 0) {
+            currentRow.push(currentCell.trim());
+            if (currentRow.some(cell => cell !== '')) {
+                rows.push(currentRow);
+            }
+        }
+        
+        // Saltar las primeras 6 filas de encabezado
+        const dataRows = rows.slice(6);
+        
+        return dataRows.map(row => {
+            // Asegurar que tenemos al menos 12 columnas
+            while (row.length < 12) {
+                row.push('');
+            }
+            
+            return {
+                nro: row[0] || '-',
+                nombre: row[1] || 'Anónimo',
+                genero: row[2] || '',
+                edad: row[3] || '?',
+                depto: row[4] || '',
+                ciudad: row[5] || '',
+                profesion: row[6] || '',
+                donde: row[7] || '',
+                historia: row[8] || '',
+                its: row[9] || '',
+                redes: row[10] || '',
+                pruebas: row[11] || ''
+            };
+        }).filter(item => {
+            // Filtrar filas que sean claramente encabezados o vacías
+            return item.nombre && 
+                   item.nombre !== 'Anónimo' && 
+                   item.nombre.toLowerCase() !== 'nombre completo' &&
+                   item.nombre.toLowerCase() !== 'nombre';
+        });
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const pageItems = filteredData.slice(start, end);
+
+        if(pageItems.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 30px;">No se encontraron resultados</td></tr>';
+            return;
+        }
+
+        pageItems.forEach(item => {
+            // Estilo ITS
+            let itsBadge = '';
+            if(item.its) {
+                const txt = item.its.toLowerCase();
+                if(txt.includes('si') || txt.includes('sí') || txt.includes('positivo')) {
+                    itsBadge = `<div class="tag tag-its">⚠️ ${item.its}</div>`;
+                } else if(txt.includes('no') || txt.includes('negativo') || txt.includes('limpio')) {
+                    itsBadge = `<div class="tag tag-ok">${item.its}</div>`;
+                } else {
+                    itsBadge = `<div class="tag">${item.its}</div>`;
+                }
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="col-nro">${item.nro}</td>
+                <td class="col-nombre">${item.nombre}</td>
+                
+                <td class="col-datos">
+                    ${item.depto ? `<span class="tag tag-depto">${item.depto}</span>` : ''}
+                    ${item.ciudad ? `<br>📍 ${item.ciudad}` : ''}
+                    ${item.edad ? `<br>🎂 <b>${item.edad} años</b>` : ''}
+                    ${item.profesion ? `<br>💼 ${item.profesion}` : ''}
+                    ${item.donde ? `<span class="label-donde">👀 Lo conoció en: ${item.donde}</span>` : ''}
+                </td>
+
+                <td class="col-historia">${item.historia || '-'}</td>
+
+                <td class="col-its">${itsBadge || '-'}</td>
+
+                <td class="col-redes">${item.redes || '-'}</td>
+
+                <td class="col-pruebas">
+                    ${item.pruebas ? `<a href="${item.pruebas}" target="_blank" class="btn-link">VER</a>` : '<span style="color:#444;">-</span>'}
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+        
+        window.scrollTo(0, 0);
+    }
+
+    function renderPagination() {
+        const container = document.getElementById('paginationContainer');
+        container.innerHTML = '';
+        const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+        
+        if (totalPages <= 1) return;
+
+        // Inicio
+        const startBtn = document.createElement('button');
+        startBtn.innerText = '« Inicio';
+        startBtn.className = 'page-btn nav-btn';
+        startBtn.disabled = currentPage === 1;
+        startBtn.onclick = () => { currentPage = 1; renderTable(); renderPagination(); };
+        container.appendChild(startBtn);
+
+        // Anterior
+        const prevBtn = document.createElement('button');
+        prevBtn.innerText = '‹ Ant';
+        prevBtn.className = 'page-btn';
+        prevBtn.disabled = currentPage === 1;
+        prevBtn.onclick = () => { currentPage--; renderTable(); renderPagination(); };
+        container.appendChild(prevBtn);
+
+        // Números
+        let startPage = Math.max(1, currentPage - 2);
+        let endPage = Math.min(totalPages, startPage + 4);
+        if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
+
+        for (let i = startPage; i <= endPage; i++) {
+            const btn = document.createElement('button');
+            btn.innerText = i;
+            btn.className = 'page-btn';
+            if (i === currentPage) btn.classList.add('active');
+            btn.onclick = () => { currentPage = i; renderTable(); renderPagination(); };
+            container.appendChild(btn);
+        }
+
+        // Siguiente
+        const nextBtn = document.createElement('button');
+        nextBtn.innerText = 'Sig ›';
+        nextBtn.className = 'page-btn';
+        nextBtn.disabled = currentPage === totalPages;
+        nextBtn.onclick = () => { currentPage++; renderTable(); renderPagination(); };
+        container.appendChild(nextBtn);
+
+        // Final
+        const endBtn = document.createElement('button');
+        endBtn.innerText = 'Fin »';
+        endBtn.className = 'page-btn nav-btn';
+        endBtn.disabled = currentPage === totalPages;
+        endBtn.onclick = () => { currentPage = totalPages; renderTable(); renderPagination(); };
+        container.appendChild(endBtn);
+    }
+
+    // Buscador
+    document.getElementById('searchInput').addEventListener('keyup', (e) => {
+        const term = e.target.value.toLowerCase();
+        filteredData = allData.filter(item => 
+            item.nombre.toLowerCase().includes(term) || 
+            item.depto.toLowerCase().includes(term) ||
+            item.ciudad.toLowerCase().includes(term) ||
+            item.nro.toString().includes(term)
+        );
+        currentPage = 1;
+        renderTable();
+        renderPagination();
+    });
+
+    loadData();
+</script>
+
+</body>
+  </html>
